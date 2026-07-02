@@ -1,4 +1,7 @@
 # Grafica di un file csv con una web-app streamlit
+# Lo script è finalizzato a caricare la curva di scarica
+# e a consentire all'utente di calcolare la durata della scarica attraverso
+# l'esame del grafico
 #
 # L. Vanni, vers.0, 30/06/2026
 
@@ -6,7 +9,7 @@
 import numpy as np
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+from datetime import timedelta as td
 
 # Funzioni ausiliarie
 def converti_data(valore_stringa):
@@ -18,6 +21,12 @@ def converti_data(valore_stringa):
     # Ricostruisce la stringa nel formato ISO accettato da NumPy
     data_iso = f"{s[6:10]}-{s[3:5]}-{s[0:2]}T{s[11:19]}.{s[20:]}"
     return np.datetime64(data_iso)
+
+# Intestazione interfaccia
+"""
+Calcolo dei tempi di scarica
+============================
+"""
 
 # Acquisizione dei dati in pandas dataframe
 # l'oggetto file_caricato è un oggetto nativo streamlit per i file
@@ -42,6 +51,8 @@ if file_caricato is not None:
     dati['Tempo'] = pd.to_datetime(dati['Tempo']) # conversione del formato
 
     # Grafica dei dati
+    import plotly.express as px
+
     fig = px.line(dati, x='Tempo', y='tensione', title='Tensione vs Tempo')
     fig.update_xaxes(showspikes=True, spikemode='across', spikesnap='cursor', spikethickness=1)
     fig.update_yaxes(showspikes=True, spikemode='across', spikesnap='cursor', spikethickness=1)
@@ -55,3 +66,22 @@ if file_caricato is not None:
         annotation_position='top left'
     )
     st.plotly_chart(fig, use_container_width=True)
+
+# calcolo del tempo trascorso tra inizio e fine della scarica
+inizio = st.text_input("Inserisci ora inizio scarica hh:mm:ss")
+fine = st.text_input("Inserisci ora fine scarica:")
+try:
+    # estrazione di ora, min, sec
+    L_i = [int(e) for e in inizio.split(':')]
+    L_f = [int(e) for e in fine.split(':')]
+    #creazione di oggetti timedelta di inizio e fine
+    td_i = td(hours=L_i[0], minutes=L_i[1], seconds=L_i[2])
+    td_f = td(hours=L_f[0], minutes=L_f[1], seconds=L_f[2])
+    # calcolo del tempo trascorso
+    Δt = td_f - td_i
+    st.write(f"\nTra {inizio} e {fine} sono trascorsi {Δt}")
+    st.write(f"pari a {round(Δt.total_seconds())} s \n")
+except Exception as e:
+    # Questo blocco cattura TUTTI gli errori standard
+    print(f"Si è verificato un imprevisto! Errore: {e}")
+    st.write("Sto attendendo un formato valido per gli orari.")
