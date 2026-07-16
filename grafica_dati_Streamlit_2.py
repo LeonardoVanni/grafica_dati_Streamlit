@@ -58,7 +58,8 @@ if file_caricato is not None:
     dati['Tempo'] = pd.to_datetime(dati['Tempo']) # conversione del formato
     # print(dati)
 
-    # Grafica dei dati
+    # GRAFICA DEI DATI
+    ## grafico delle tensioni
     fig = px.line(dati, x='Tempo', y=['Potenziale', 'Caduta tensione'], title='Potenziale vs Tempo')
     fig.update_xaxes(showspikes=True, spikemode='across', spikesnap='cursor', spikethickness=1)
     fig.update_yaxes(showspikes=True, spikemode='across', spikesnap='cursor', spikethickness=1)
@@ -72,16 +73,27 @@ if file_caricato is not None:
         annotation_position='top left'
     )
     st.plotly_chart(fig)
-    # secondo grafico
-    fig2 = px.line(dati, x='Tempo', y='Temperatura', title='Temperatura vs Tempo')
-    fig2.update_xaxes(showspikes=True, spikemode='across', spikesnap='cursor', spikethickness=1)
-    fig2.update_yaxes(showspikes=True, spikemode='across', spikesnap='cursor', spikethickness=1)
-    fig2.update_layout(hovermode='x unified')  # mostra tutti i valori alla stessa x in un unico tooltip
-    st.plotly_chart(fig2)
+
+    ## grafico della temperatura
+    fig2 = px.line(dati, x='Tempo', y='Temperatura', title='Temperatura vs Tempo',markers=True)
+    fig2.update_traces(marker_size=0.5)
+    eventi_fig2 = st.plotly_chart(
+                fig2,
+                key="grafico_temperatura",
+                on_select="rerun",
+                selection_mode=["box"]
+                )
+    if eventi_fig2.selection:
+        indici_righe_selez = eventi_fig2.selection.point_indices
+        dati_selez = dati.iloc[indici_righe_selez]
+        T_m = dati_selez.Temperatura.mean()
+        if type(T_m) is np.float64:
+            st.write(f"T media in box = {T_m:.1f} °C")
+    st.write("(Usa il box di selezione sul grafico per calcolarne la temperatura media)")
 
 # calcolo del tempo trascorso tra inizio e fine della scarica
-inizio = st.text_input("Inserisci ora inizio scarica hh:mm:ss")
-fine = st.text_input("Inserisci ora fine scarica:")
+inizio = st.text_input("Inserisci ora inizio scarica hh:mm:ss",value="00:00:00")
+fine = st.text_input("Inserisci ora fine scarica:",value="00:00:00")
 try:
     # estrazione di ora, min, sec
     L_i = [int(e) for e in inizio.split(':')]
